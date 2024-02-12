@@ -17,3 +17,12 @@ export async function getUserById(id: string) {
     return null;
   }
 }
+
+export async function getAccountByUserId(id: string) {
+  try {
+    const account = await db.account.findUnique({ where: { id } });
+    return account;
+  } catch (e) {
+    return null;
+  }
+}

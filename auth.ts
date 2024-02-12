@@ -18,26 +18,41 @@ export const {
     error: "/auth/error",
   },
 
-  events: {
-    async linkAccount({ user }) {
-      await db.user.update({
-        where: { id: user.id },
-        data: { emailVerified: new Date() },
-      });
-    },
-  },
+  // events: {
+  //   async linkAccount({ user, account, profile }) {
+  //     console.log("--> Link account :p");
+  //     console.log({ user: user }, { account: account }, { profile: profile });
+
+  //     await db.user.update({
+  //       where: { id: user.id },
+  //       data: { emailVerified: new Date() },
+  //     });
+  //   },
+  // },
 
   callbacks: {
-    // async signIn({ user }) {
-    //   //It tells TypeScript that even though something looks like it could be null, it can trust you that it's not
-    //   const existingUser = await getUserById(user.id!);
+    async signIn({ user, account }) {
+      console.log("--> Callback singIn");
+      console.log({ user: user }, { account: account });
 
-    //   //if (!existingUser || !existingUser.emailVerified) return false;
+      //Allow OAuth without email verification
+      if (account?.provider !== "credentials") return true;
 
-    //   return true;
-    // },
+      // //It tells TypeScript that even though something looks like it could be null, it can trust you that it's not
+      const existingUser = await getUserById(user.id!);
+
+      // Prevent credentials signin without email verification
+      if (!existingUser || !existingUser?.emailVerified) return false;
+
+      // TODO: Add 2FA check
+
+      return true;
+    },
 
     async session({ session, token }) {
+      console.log("--> Callback session");
+      console.log({ session: session }, { token: token });
+
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
@@ -49,12 +64,16 @@ export const {
       return session;
     },
 
-    async jwt({ token }) {
-      if (!token.sub) return token;
+    async jwt({ token, account, profile }) {
+      console.log("--> Callback jwt");
+      console.log({ token: token });
 
-      const existingUser = await getUserById(token.sub);
+      console.log("--> Callback jwt1");
+
+      const existingUser = await getUserById(token.sub!);
 
       if (!existingUser) return token;
+      console.log("--> Callback jwt2");
 
       token.role = existingUser.role;
 

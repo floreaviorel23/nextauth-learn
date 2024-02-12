@@ -36,17 +36,6 @@ function Social() {
       >
         <FaGithub className="h-6 w-6"></FaGithub>
       </Button>
-
-      <Button
-        size="lg"
-        className="w-full"
-        variant="outline"
-        onClick={() => {
-          signIn("google");
-        }}
-      >
-        Google
-      </Button>
     </div>
   );
 }
