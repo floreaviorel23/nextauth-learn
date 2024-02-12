@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./lib/db";
 import authConfig from "./auth.config";
 import { getUserById } from "./data/user";
+import { getTwoFactorConfirmationByUserId } from "./data/two-factor-confirmation";
 
 export const {
   handlers: { GET, POST },
@@ -18,23 +19,17 @@ export const {
     error: "/auth/error",
   },
 
-  // events: {
-  //   async linkAccount({ user, account, profile }) {
-  //     console.log("--> Link account :p");
-  //     console.log({ user: user }, { account: account }, { profile: profile });
-
-  //     await db.user.update({
-  //       where: { id: user.id },
-  //       data: { emailVerified: new Date() },
-  //     });
-  //   },
-  // },
+  events: {
+    async linkAccount({ user, account, profile }) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { emailVerified: new Date() },
+      });
+    },
+  },
 
   callbacks: {
     async signIn({ user, account }) {
-      console.log("--> Callback singIn");
-      console.log({ user: user }, { account: account });
-
       //Allow OAuth without email verification
       if (account?.provider !== "credentials") return true;
 
@@ -44,15 +39,23 @@ export const {
       // Prevent credentials signin without email verification
       if (!existingUser || !existingUser?.emailVerified) return false;
 
-      // TODO: Add 2FA check
+      if (existingUser.isTwoFactorEnabled) {
+        const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
+          existingUser.id
+        );
+
+        if (!twoFactorConfirmation) return false;
+
+        //Delete two factor confirmation for next signIn
+        await db.twoFactorConfirmation.delete({
+          where: { id: twoFactorConfirmation.id },
+        });
+      }
 
       return true;
     },
 
     async session({ session, token }) {
-      console.log("--> Callback session");
-      console.log({ session: session }, { token: token });
-
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
@@ -65,16 +68,9 @@ export const {
     },
 
     async jwt({ token, account, profile }) {
-      console.log("--> Callback jwt");
-      console.log({ token: token });
-
-      console.log("--> Callback jwt1");
-
       const existingUser = await getUserById(token.sub!);
 
       if (!existingUser) return token;
-      console.log("--> Callback jwt2");
-
       token.role = existingUser.role;
 
       return token;

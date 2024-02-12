@@ -20,6 +20,7 @@ import FormSuccess from "../form-success";
 import { login } from "@/actions/login";
 import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -27,6 +28,8 @@ function LoginForm() {
     searchParams.get("error") === "OAuthAccountNotLinked"
       ? "Email already in use with different provider!"
       : "";
+
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
 
   // React hook for transition after login button is clicked (will disable the inputs)
   const [isPending, startTransition] = useTransition();
@@ -56,15 +59,22 @@ function LoginForm() {
     startTransition(() => {
       login(values)
         .then((data) => {
-          setError(data?.error);
-          setSuccess(data?.success);
+          if (data?.error) {
+            form.reset();
+            setError(data.error);
+          }
+
+          if (data?.success) {
+            form.reset();
+            setSuccess(data.success);
+          }
+
+          if (data?.twoFactor) {
+            setShowTwoFactor(true);
+          }
         })
-        // Remove the pop-up afte 3 seconds
-        .then((data) => {
-          setTimeout(() => {
-            setError("");
-            setSuccess("");
-          }, 3000);
+        .catch(() => {
+          setError("Something went wrong");
         });
     });
   }
@@ -79,52 +89,89 @@ function LoginForm() {
       >
         {/* Form used from the shadcn ui
         -- it uses the form react hook we defined earlier */}
+
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmitLoginForm)}
             className="space-y-6"
           >
             <div className="space-y-4">
+              {showTwoFactor && (
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>2FA Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isPending}
+                          placeholder="123456"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               {/* We control the fields using the control function provided by the hook,
               rather than manually dealing with them with useState
               -- see shadcn documentation for Form */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={isPending}
-                        placeholder="stefandelabarbulesti@yahoo.com"
-                        type="email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input disabled={isPending} {...field} type="password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!showTwoFactor && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            disabled={isPending}
+                            placeholder="stefandelabarbulesti@yahoo.com"
+                            type="email"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            disabled={isPending}
+                            {...field}
+                            type="password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+              <Button
+                size="sm"
+                variant="link"
+                asChild
+                className="px-0 font-normal"
+              >
+                <Link href={"/auth/reset"}>Forgot password?</Link>
+              </Button>
 
               <FormError message={error || urlError} />
               <FormSuccess message={success} />
 
               <Button disabled={isPending} type="submit" className="w-full">
-                Login
+                {showTwoFactor ? "Confirm" : "Login"}
               </Button>
             </div>
           </form>
