@@ -11,15 +11,7 @@ function SettingsPage() {
 
     //signOut(); (need import)
   };
-  return (
-    <>
-      <div className="bg-white p-10 rounded-xl">
-        <button onClick={onClickSignOut} type="submit">
-          Sign out
-        </button>
-      </div>
-    </>
-  );
+  return <></>;
 }
 
 export default SettingsPage;
