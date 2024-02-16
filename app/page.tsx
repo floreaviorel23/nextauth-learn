@@ -20,14 +20,14 @@ export default function Home() {
         >
           🔐Auth
         </h1>
-        <p className="text-white text-lg text-center">
+        <div className="text-white text-lg text-center">
           A simple authentication service
-        </p>
+        </div>
         <div>
           {/* We send the data to provide LoginButton as children
           -- everything inside LoginButton is considered "children"
           -- similarly, we could move the Button inside LoginButton */}
-          <LoginButton>
+          <LoginButton mode="modal" asChild>
             <Button variant="secondary" size="lg">
               Sign in
             </Button>

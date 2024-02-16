@@ -18,14 +18,5 @@
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}"
         },
-        {
-            "name": "Attach",
-            "port": 9229,
-            "request": "attach",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "pwa-node"
-        }
     ]
 }
